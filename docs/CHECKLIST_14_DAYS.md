@@ -37,10 +37,12 @@ This checklist tracks the delivery of OrbitLink for the college hackathon demons
 ---
 
 ## Phase 2: Monitoring Enhancements & Real Persistence (Days 3–4)
+- [x] Implement live throughput speed test (`POST /api/v1/tests/run`) with rate-limited CDN probe.
+- [x] Add Wi-Fi SSID and signal strength extraction on Windows (`netsh`) and Linux (`nmcli`).
+- [x] Implement full-screen SaaS dashboard with persistent sidebar across all 9 sections.
+- [x] Add interactive Recharts time-series throughput charts and toast notification system.
 - [ ] Implement periodic background collector daemon with configurable polling intervals.
-- [ ] Add Wi-Fi SSID and signal strength extraction on Linux (`nmcli`/`iwconfig`) and Windows (`netsh`).
-- [ ] Implement rate-limited, opt-in throughput speed tests with cooldown enforcement.
-- [ ] Write integration tests for high-frequency counter deltas and interface change detection.
+- [ ] Add session-level network tracking and storage.
 
 ---
 
