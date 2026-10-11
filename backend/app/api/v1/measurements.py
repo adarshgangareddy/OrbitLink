@@ -21,17 +21,21 @@ router = APIRouter(prefix="/measurements", tags=["Measurements"])
     "/collect",
     response_model=MeasurementRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Collect and persist a real live device network measurement",
+    summary="Collect and persist a live device network measurement",
 )
 def collect_and_store_measurement(
+    include_speed_test: bool = Query(
+        False,
+        description="Whether to execute a controlled download throughput test",
+    ),
     db: Session = Depends(get_db),
 ) -> MeasurementRead:
     """
-    Triggers local device network probe, extracts real interface byte counters and ping/HTTP latency,
+    Triggers local device network probe, extracts real interface byte counters, latency, Wi-Fi info,
     and commits the record to the database.
     """
     try:
-        live_data = collect_live_measurement()
+        live_data = collect_live_measurement(include_speed_test=include_speed_test)
         measurement_in = MeasurementCreate(**live_data)
         saved = record_measurement(db, measurement_in)
         return saved
@@ -39,6 +43,30 @@ def collect_and_store_measurement(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to collect network measurement: {str(exc)}",
+        )
+
+
+@router.post(
+    "/speed-test",
+    response_model=MeasurementRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Execute a full network throughput speed test",
+)
+def run_speed_test(
+    db: Session = Depends(get_db),
+) -> MeasurementRead:
+    """
+    Executes a controlled, rate-limited download speed test and persists the result.
+    """
+    try:
+        live_data = collect_live_measurement(include_speed_test=True)
+        measurement_in = MeasurementCreate(**live_data)
+        saved = record_measurement(db, measurement_in)
+        return saved
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to execute speed test: {str(exc)}",
         )
 
 

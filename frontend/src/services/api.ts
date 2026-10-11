@@ -18,8 +18,8 @@ export async function fetchLatestMeasurement(): Promise<NetworkMeasurement | nul
   return resp.json();
 }
 
-export async function triggerLiveMeasurement(): Promise<NetworkMeasurement> {
-  const resp = await fetch(`${API_BASE}/measurements/collect`, {
+export async function triggerLiveMeasurement(includeSpeedTest: boolean = false): Promise<NetworkMeasurement> {
+  const resp = await fetch(`${API_BASE}/measurements/collect?include_speed_test=${includeSpeedTest}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -32,7 +32,21 @@ export async function triggerLiveMeasurement(): Promise<NetworkMeasurement> {
   return resp.json();
 }
 
-export async function fetchMeasurementHistory(limit: number = 10): Promise<MeasurementHistoryResponse> {
+export async function runSpeedTest(): Promise<NetworkMeasurement> {
+  const resp = await fetch(`${API_BASE}/tests/run`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!resp.ok) {
+    const errorData = await resp.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Speed test failed with status ${resp.status}`);
+  }
+  return resp.json();
+}
+
+export async function fetchMeasurementHistory(limit: number = 20): Promise<MeasurementHistoryResponse> {
   const resp = await fetch(`${API_BASE}/measurements/history?limit=${limit}`);
   if (!resp.ok) {
     throw new Error(`Failed to fetch measurement history: ${resp.status}`);
