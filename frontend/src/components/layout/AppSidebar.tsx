@@ -48,7 +48,7 @@ export function AppSidebar({
   const isConnected = latest ? latest.status === 'connected' : health?.status === 'healthy';
 
   const navItems = [
-    { id: 'overview' as NavSection, label: 'Starlink Overview', icon: LayoutDashboard },
+    { id: 'overview' as NavSection, label: 'Network Overview', icon: LayoutDashboard },
     { id: 'monitor' as NavSection, label: 'Hardware & RF Monitor', icon: Activity },
     { id: 'usage' as NavSection, label: 'Data Usage & Plans', icon: Database },
     { id: 'performance' as NavSection, label: 'Performance & Jitter', icon: BarChart3 },
@@ -75,7 +75,7 @@ export function AppSidebar({
               </span>
             </div>
             <p className="text-[9px] font-bold tracking-widest text-slate-400 uppercase">
-              STARLINK INTELLIGENCE
+              NETWORK INTELLIGENCE
             </p>
           </div>
         </div>
@@ -161,7 +161,7 @@ export function AppSidebar({
             <p className="text-xs font-semibold text-white truncate font-mono">
               {latest?.device_id || 'ADARSH'}
             </p>
-            <p className="text-[10px] text-slate-500 truncate">Starlink Terminal Node</p>
+            <p className="text-[10px] text-slate-500 truncate">Primary Gateway Node</p>
           </div>
         </div>
         <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500">

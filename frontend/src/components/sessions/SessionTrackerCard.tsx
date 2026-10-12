@@ -80,7 +80,7 @@ export function SessionTrackerCard({
           <div className="flex items-center space-x-2">
             <h2 className="text-base font-bold text-white tracking-tight">Active Session & Background Collector</h2>
             <span className="text-[10px] font-bold uppercase tracking-wider bg-cyan-950/80 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded-full">
-              Phase 2 Engine
+              Autonomous Daemon
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">

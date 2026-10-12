@@ -1,15 +1,15 @@
-# OrbitLink — AI-Powered Network Intelligence Platform
+# OrbitLink — Intelligent Internet Cost & Network Optimization Platform
 
-OrbitLink is an AI-powered network intelligence, usage analytics, and connectivity optimisation platform. It is engineered to monitor real device-level network performance on your laptop, provide deterministic cost and usage analytics, predict connection quality, and simulate future telecommunications / satellite links.
+OrbitLink is a reliable, intelligent internet cost and network quality optimization platform. It monitors real device-level network performance, provides deterministic internet plan cost comparisons, diagnoses network quality issues (RFC 3393 jitter, loaded bufferbloat, Wi-Fi RF attenuation), optimizes bandwidth usage through off-peak scheduling, and evaluates transmission energy efficiency using verified models.
 
 ---
 
 ## Visual Design System
-- **Primary Accent**: Vivid Orange (`#F97316`)
-- **Secondary Accent**: Burnt Orange (`#EA580C`)
-- **Canvas / Background**: Clean White (`#FFFFFF`) with warm off-white highlights (`#FFF7F0`)
-- **Text & Borders**: Charcoal (`#1F2937`) and neutral border grey (`#E5E7EB`)
-- **Strict Constraint**: Zero blue/purple/indigo gradients; no fabricated measurements.
+- **Surfaces**: Deep space dark charcoal (`#080C14` / `#0E1526`) with clean neutral contrast
+- **Primary Telemetry Accent**: Electric Cyan (`#00E5FF`)
+- **Action & Highlight Accent**: Vivid Orange (`#FF6B00` / `#F97316`)
+- **Status Indicators**: Emerald Green (`#10B981`) for nominal states, Amber (`#F59E0B`) for warnings, Crimson (`#EF4444`) for critical events
+- **Strict Principle**: High-density engineering dashboard, verified telemetry data, zero fabricated measurements or artificial prices.
 
 ---
 
@@ -198,40 +198,38 @@ npm run build
 ```
 *(Runs `tsc -b && vite build` to ensure 0 TypeScript compilation or bundling errors).*
 
----
+## Core Optimization Engines
 
-## Core Capabilities & Feature Overview
+OrbitLink provides 6 real-world network optimization capabilities:
 
-OrbitLink is organized into 6 production optimization engines:
-
-1. **Feature A — AI Internet Cost Optimizer**:
+1. **AI Internet Cost Optimizer**:
    - Deterministic financial model analyzing your actual measured interface data vs. configured plans.
    - Computes itemized monthly bills, allowance overage penalties, and net annual savings.
    - Evaluates suitability ratings (`Optimal`, `Viable`, `Risky`, `Unsuitable`) with zero fabricated ISP plans.
 
-2. **Feature B — Network Quality Intelligence**:
+2. **Network Quality Intelligence & Bufferbloat Diagnostics**:
    - Real RFC 3393 inter-arrival jitter, loaded-vs-idle bufferbloat identification, and Wi-Fi RF multi-wall attenuation diagnostics.
    - Before-and-after fix verification engine (`POST /api/v1/diagnostics/verify`) measuring empirical improvement.
 
-3. **Feature C — Smart Bandwidth Efficiency & Off-Peak Scheduler**:
+3. **Smart Bandwidth Efficiency & Off-Peak Scheduler**:
    - 24-hour diurnal demand heatmap from hourly interface observations.
    - Candidate off-peak window recommendation (e.g. `00:00 – 04:00`) with safe 70% throughput utilization (30% safety headroom for interactive traffic).
 
-4. **Feature D — Environmental & Resource Transmission Efficiency**:
+4. **Environmental & Resource Transmission Efficiency**:
    - Transparent lifecycle network transmission energy (kWh) and GHG emissions (kg CO2e) derived from physical interface counters.
    - Grounded in peer-reviewed models (Aslan et al. 2018 / IEA 2022: `0.015 kWh/GB`, `475 g CO2e/kWh`).
 
-5. **Feature E — Grounded AI Assistant & RAG**:
+5. **Grounded AI Assistant & Technical RAG**:
    - Answers technical network questions with verifiable citations and zero hallucination.
    - Executes 6 deterministic backend calculation tools with offline fallback.
 
-6. **Feature F — Machine Learning Usage Forecasting**:
+6. **Machine Learning Usage Forecasting**:
    - 7-day chronological horizon projection with 95% confidence bounds.
    - Rolling 3-day baseline comparison with tracked historical MAE and RMSE error metrics.
 
 ---
 
-## Visual Design System & Starlink Telemetry
-- **Deep Space Aerospace Aesthetic**: Deep charcoal (`#080C14` / `#0E1526`), electric cyan (`#00E5FF`), vivid Starlink orange (`#FF6B00`), and emerald accents.
-- **Starlink Dish Status**: Real-time motor azimuth/elevation, hemispherical sky obstruction dome, thermal sensors, and LEO satellite transceiver link budget.
-- **3-Stage Speedtest**: Device &rarr; Router (Wi-Fi) &rarr; Terminal (Cat6 PoE) &rarr; CDN Payload with radial arc speedometer.
+## Hardware Telemetry & Multi-Tier Diagnostics
+- **Network Interface & Transceiver Diagnostics**: Real-time antenna azimuth/elevation angles, hemispherical obstruction analysis, thermal sensor readings, and RF link budgets.
+- **3-Tier Speed Test**: End-to-end breakdown measuring Device &rarr; Local Gateway (Wi-Fi/Ethernet) &rarr; Uplink Node &rarr; Edge CDN payload with radial arc speedometer.
+- **Connection Continuity Timeline**: Continuous link health monitoring with micro-handover markers (&lt;0.5s) and obstruction detection.
