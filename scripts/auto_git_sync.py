@@ -6,10 +6,19 @@ stages modifications, commits with descriptive timestamps, and pushes to origin 
 """
 
 import datetime
+import os
 import subprocess
 import sys
 import time
 from pathlib import Path
+
+# Force UTF-8 stdout if supported
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 INTERVAL_SECONDS = 120  # 2 minutes
@@ -17,7 +26,8 @@ INTERVAL_SECONDS = 120  # 2 minutes
 
 def log(message: str) -> None:
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{timestamp}] [AutoGitSync] {message}", flush=True)
+    safe_msg = message.encode("ascii", errors="replace").decode("ascii")
+    print(f"[{timestamp}] [AutoGitSync] {safe_msg}", flush=True)
 
 
 def run_git_command(args: list[str]) -> tuple[int, str, str]:
@@ -30,6 +40,8 @@ def run_git_command(args: list[str]) -> tuple[int, str, str]:
             stderr=subprocess.PIPE,
             text=True,
             check=False,
+            encoding="utf-8",
+            errors="replace",
         )
         return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
     except Exception as exc:
@@ -54,7 +66,7 @@ def auto_sync_cycle() -> None:
 
     log(f"Detected {len(changes)} modified/untracked item(s):")
     for item in changes[:5]:
-        log(f"  • {item}")
+        log(f"  * {item}")
     if len(changes) > 5:
         log(f"  ... and {len(changes) - 5} more.")
 
@@ -85,7 +97,7 @@ def auto_sync_cycle() -> None:
     log("Pushing to origin main...")
     code, stdout, stderr = run_git_command(["push", "origin", "main"])
     if code == 0:
-        log("✓ Successfully pushed to origin main!")
+        log("[OK] Successfully pushed to origin main!")
     else:
         log(f"Notice: git push returned code {code}. Stderr: {stderr}")
 
