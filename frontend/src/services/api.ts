@@ -5,6 +5,14 @@ import type {
   NetworkSession,
   SessionListResponse,
   CollectorStatus,
+  PlanConfig,
+  CostOptimizationAnalysis,
+  QualityDiagnosisItem,
+  DiagnosticVerificationResponse,
+  BandwidthScheduleRecommendation,
+  EnvironmentalImpactReport,
+  AssistantQueryResponse,
+  MLForecastResponse,
 } from '../types';
 
 const API_BASE = '/api/v1';
@@ -147,3 +155,111 @@ export async function fetchSessions(limit: number = 20): Promise<SessionListResp
   return resp.json();
 }
 
+// ==========================================
+// Feature A: Internet Cost Optimizer API
+// ==========================================
+
+export async function fetchCurrentPlan(): Promise<PlanConfig> {
+  const resp = await fetch(`${API_BASE}/plans/current`);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch current plan: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+export async function saveCurrentPlan(plan: PlanConfig): Promise<PlanConfig> {
+  const resp = await fetch(`${API_BASE}/plans/current`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(plan),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to save plan: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+export async function fetchCostAnalysis(customMonthlyGb?: number): Promise<CostOptimizationAnalysis> {
+  const query = customMonthlyGb ? `?custom_monthly_gb=${customMonthlyGb}` : '';
+  const resp = await fetch(`${API_BASE}/plans/analysis${query}`);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch cost analysis: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+// ==========================================
+// Feature B: Network Quality Intelligence API
+// ==========================================
+
+export async function fetchQualityDiagnoses(limit: number = 25): Promise<QualityDiagnosisItem[]> {
+  const resp = await fetch(`${API_BASE}/diagnostics/quality?limit=${limit}`);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch quality diagnoses: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+export async function verifyRemediationAction(actionTaken: string, baselineId?: number): Promise<DiagnosticVerificationResponse> {
+  const resp = await fetch(`${API_BASE}/diagnostics/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action_taken: actionTaken, baseline_measurement_id: baselineId }),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to verify remediation action: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+// ==========================================
+// Feature C: Smart Bandwidth Efficiency API
+// ==========================================
+
+export async function fetchBandwidthSchedule(fileSizeGb: number = 15.0, safeSpeedMbps: number = 50.0): Promise<BandwidthScheduleRecommendation> {
+  const resp = await fetch(`${API_BASE}/bandwidth/schedule?file_size_gb=${fileSizeGb}&safe_speed_mbps=${safeSpeedMbps}`);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch bandwidth schedule: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+// ==========================================
+// Feature D: Environmental & Resource Efficiency API
+// ==========================================
+
+export async function fetchEnvironmentalImpact(): Promise<EnvironmentalImpactReport> {
+  const resp = await fetch(`${API_BASE}/environmental/impact`);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch environmental impact: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+// ==========================================
+// Feature E: Grounded AI Assistant API
+// ==========================================
+
+export async function queryAssistant(question: string): Promise<AssistantQueryResponse> {
+  const resp = await fetch(`${API_BASE}/assistant/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to query assistant: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+// ==========================================
+// Feature F: Machine Learning Forecasting API
+// ==========================================
+
+export async function fetchMLForecast(horizonDays: number = 7): Promise<MLForecastResponse> {
+  const resp = await fetch(`${API_BASE}/ml/forecast?horizon_days=${horizonDays}`);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch ML forecast: ${resp.status}`);
+  }
+  return resp.json();
+}
