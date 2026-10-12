@@ -7,13 +7,10 @@ import {
   CheckCircle2,
   Database,
   Gauge,
-  Lightbulb,
   Menu,
   Radio,
   RefreshCw,
   Satellite,
-  Server,
-  ShieldCheck,
   WifiOff,
   Zap,
 } from 'lucide-react';

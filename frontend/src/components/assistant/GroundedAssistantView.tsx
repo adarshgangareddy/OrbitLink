@@ -4,9 +4,6 @@ import {
   Send,
   BookOpen,
   Wrench,
-  Sparkles,
-  ShieldCheck,
-  HelpCircle,
 } from 'lucide-react';
 import type { AssistantQueryResponse } from '../../types';
 

@@ -3,11 +3,8 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle2,
-  HelpCircle,
-  Radio,
   RefreshCw,
   ShieldAlert,
-  Wifi,
   Zap,
 } from 'lucide-react';
 import type {

@@ -1,4 +1,4 @@
-import { TrendingUp, BarChart2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 import type { MLForecastResponse } from '../../types';
 
 interface UsageForecastCardProps {
@@ -19,6 +19,7 @@ export function UsageForecastCard({ forecast, loading = false }: UsageForecastCa
             <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/80 border border-cyan-500/30 px-2 py-0.5 rounded-full font-mono">
               CHRONOLOGICAL VALIDATION
             </span>
+            {loading && <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />}
           </div>
           <p className="text-xs text-slate-400 mt-1">
             Statistical trend projections with 95% confidence intervals and historical error metrics (MAE/RMSE).

@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import {
   Clock,
-  Download,
-  ShieldCheck,
   Info,
-  Calendar,
-  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import type { BandwidthScheduleRecommendation } from '../../types';
 
@@ -39,6 +36,7 @@ export function BandwidthSchedulerCard({
             <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/80 border border-cyan-500/30 px-2 py-0.5 rounded-full font-mono">
               OFF-PEAK INTELLIGENCE
             </span>
+            {loading && <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />}
           </div>
           <p className="text-xs text-slate-400 mt-1">
             Recommends optimal non-peak windows to transfer large files without degrading interactive household traffic.

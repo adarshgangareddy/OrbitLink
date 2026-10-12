@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import {
   Leaf,
-  Zap,
-  Globe,
-  HelpCircle,
   FileText,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import type { EnvironmentalImpactReport } from '../../types';
 
@@ -32,6 +30,7 @@ export function EnvironmentalImpactCard({
             <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">
               IEA / ASLAN MODEL
             </span>
+            {loading && <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />}
           </div>
           <p className="text-xs text-slate-400 mt-1">
             Peer-reviewed lifecycle estimates derived from physical network interface counters.
