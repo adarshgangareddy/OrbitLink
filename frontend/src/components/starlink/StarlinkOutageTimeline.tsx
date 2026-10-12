@@ -21,7 +21,7 @@ export function StarlinkOutageTimeline({ measurements = [] }: StarlinkOutageTime
         <div>
           <div className="flex items-center space-x-2">
             <Clock className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-sm font-bold text-white tracking-tight">Starlink Outages & Uptime Monitor</h3>
+            <h3 className="text-sm font-bold text-white tracking-tight">Network Outages & Uptime Monitor</h3>
             <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-full">
               99.98% UPTIME
             </span>

@@ -28,7 +28,7 @@ body {
   background-size: 24px 24px, 100% 100%;
 }
 
-/* Starlink Radar Pulse Animation */
+/* RF Telemetry Radar Sweep Animation */
 @keyframes radar-sweep {
   0% {
     transform: rotate(0deg);

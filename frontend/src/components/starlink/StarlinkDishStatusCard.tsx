@@ -70,7 +70,7 @@ export function StarlinkDishStatusCard({
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Phased Array Transceiver • Beamtracking Constellation v2 Mini
+              Broadband Transceiver • Active RF Uplink / Downlink
             </p>
           </div>
         </div>
@@ -114,7 +114,7 @@ export function StarlinkDishStatusCard({
             <button
               onClick={onOpenSpeedTest}
               className="px-3 py-1.5 text-xs font-semibold text-white bg-orange-600/80 hover:bg-orange-600 border border-orange-500/40 rounded-xl transition-all flex items-center space-x-1"
-              title="Launch Starlink Speed Test"
+              title="Launch 3-Tier Speed Test"
             >
               <Gauge className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Speed Test</span>
@@ -211,7 +211,7 @@ export function StarlinkDishStatusCard({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div className="p-4 bg-slate-900/70 rounded-xl border border-slate-800">
               <p className="text-slate-400 uppercase tracking-wider text-[10px] font-semibold">Active Spacecraft</p>
-              <p className="text-base font-bold font-mono text-cyan-400 mt-1">STARLINK-31849 (v2 Mini)</p>
+              <p className="text-base font-bold font-mono text-cyan-400 mt-1">LEO-SAT-NODE (Active)</p>
               <div className="space-y-1 mt-2 text-slate-300">
                 <p>• Orbit Altitude: <span className="font-mono text-white">546.8 km</span></p>
                 <p>• Velocity: <span className="font-mono text-white">7.61 km/s (27,400 km/h)</span></p>
@@ -254,7 +254,7 @@ export function StarlinkDishStatusCard({
                   Continuous optical & signal attenuation scan for trees, buildings, and overhead physical barriers.
                 </p>
                 <p className="text-[11px] text-emerald-400 font-medium mt-1">
-                  ✓ Field of view unobstructed • 100% Starlink satellite track compliance
+                  ✓ Field of view unobstructed • 100% RF tracking compliance
                 </p>
               </div>
             </div>
