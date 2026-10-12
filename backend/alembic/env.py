@@ -11,7 +11,8 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from app.database.base import Base
-from app.models.measurement import NetworkMeasurement  # ensures model is registered
+from app.models.measurement import NetworkMeasurement
+from app.models.session import NetworkSession
 from app.database.session import get_engine
 
 config = context.config

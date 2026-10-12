@@ -18,6 +18,7 @@ class NetworkMeasurement(Base):
     __tablename__ = "network_measurements"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[Optional[str]] = mapped_column(String(64), index=True, nullable=True)
     device_id: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
     interface_name: Mapped[str] = mapped_column(String(50), index=True, nullable=False)
 

@@ -7,6 +7,9 @@ from app.database.session import create_tables, init_engine
 from app.api.v1.router import api_router
 
 
+from app.monitoring.collector import collector_daemon
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing OrbitLink backend services...")
@@ -14,9 +17,17 @@ async def lifespan(app: FastAPI):
         init_engine()
         create_tables()
         logger.info("Database schemas verified.")
+        if settings.COLLECTOR_AUTO_START:
+            collector_daemon.start(interval_seconds=settings.COLLECTOR_INTERVAL_SECONDS)
+            logger.info("Background collector daemon started.")
     except Exception as exc:
         logger.error(f"Error during database initialization: {exc}")
     yield
+    try:
+        collector_daemon.stop()
+        logger.info("Background collector daemon stopped.")
+    except Exception as exc:
+        logger.error(f"Error stopping collector daemon: {exc}")
     logger.info("OrbitLink backend shut down.")
 
 

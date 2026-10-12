@@ -45,6 +45,7 @@ def record_measurement(db: Session, measurement_in: MeasurementCreate) -> Measur
                 bytes_recv_delta = measurement_in.bytes_recv
 
     db_obj = NetworkMeasurement(
+        session_id=measurement_in.session_id,
         device_id=measurement_in.device_id,
         interface_name=measurement_in.interface_name,
         bytes_sent=measurement_in.bytes_sent,

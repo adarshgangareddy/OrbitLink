@@ -36,13 +36,44 @@ This checklist tracks the delivery of OrbitLink for the college hackathon demons
 
 ---
 
-## Phase 2: Monitoring Enhancements & Real Persistence (Days 3–4)
-- [x] Implement live throughput speed test (`POST /api/v1/tests/run`) with rate-limited CDN probe.
-- [x] Add Wi-Fi SSID and signal strength extraction on Windows (`netsh`) and Linux (`nmcli`).
-- [x] Implement full-screen SaaS dashboard with persistent sidebar across all 9 sections.
-- [x] Add interactive Recharts time-series throughput charts and toast notification system.
-- [ ] Implement periodic background collector daemon with configurable polling intervals.
-- [ ] Add session-level network tracking and storage.
+## Phase 2: Monitoring Enhancements & Real Persistence (Days 3–4) — [COMPLETED]
+- [x] **Live Throughput Speed Test**:
+  - [x] Implemented controlled, rate-limited download throughput test (`POST /api/v1/tests/run`) using CDN sample payloads.
+  - [x] Calculated throughput in Mbps based on exact byte transfer duration.
+- [x] **Multiplatform Wi-Fi Extraction**:
+  - [x] Implemented Windows `netsh wlan show interfaces` parser for active SSID and signal percentage.
+  - [x] Implemented Linux `nmcli` Wi-Fi parser with fallback.
+- [x] **Full-Screen SaaS Dashboard Layout**:
+  - [x] Built persistent sidebar (`AppSidebar.tsx`) across all 9 application navigation sections.
+  - [x] Implemented unified toast alert notification system.
+- [x] **Throughput Visualisation**:
+  - [x] Implemented interactive Recharts time-series chart (`ThroughputChart.tsx`) displaying chronological speed test results.
+- [x] **Periodic Background Collector Daemon**:
+  - [x] Implemented thread-safe `NetworkCollectorDaemon` (`app/monitoring/collector.py`) with configurable polling intervals.
+  - [x] Added automated background collection loop with graceful startup and shutdown in FastAPI lifespan (`app/main.py`).
+  - [x] Implemented collector management API endpoints:
+    - `GET /api/v1/collector/status`
+    - `POST /api/v1/collector/start`
+    - `POST /api/v1/collector/stop`
+    - `POST /api/v1/collector/config`
+    - `POST /api/v1/collector/collect-now`
+- [x] **Session-Level Network Tracking & Storage**:
+  - [x] Designed `NetworkSession` database model (`app/models/session.py`) and added `session_id` to `NetworkMeasurement`.
+  - [x] Created Alembic migration `7a1e2f3d4c5b_add_network_sessions_and_session_id.py`.
+  - [x] Implemented `app/services/session_service.py` for session lifecycle, running duration, baseline byte offsets, and real-time latency aggregation.
+  - [x] Implemented session API endpoints:
+    - `POST /api/v1/sessions/start`
+    - `POST /api/v1/sessions/stop`
+    - `GET /api/v1/sessions/active`
+    - `GET /api/v1/sessions`
+    - `GET /api/v1/sessions/{session_id}`
+- [x] **Frontend Session & Collector Integration**:
+  - [x] Implemented `SessionTrackerCard.tsx` with live active timer, daemon controls, quick-label tags, and metrics overview.
+  - [x] Implemented `SessionHistoryTable.tsx` with formatted duration, download/upload splits, and latency benchmarks.
+  - [x] Integrated daemon status and session tracking in Overview, Monitor, Usage, and History views.
+- [x] **Automated Tests**:
+  - [x] Added `tests/test_collector.py` for collector API endpoints and background daemon methods.
+  - [x] Added `tests/test_sessions.py` for session lifecycle, metric aggregation, and database queries (10/10 test suite passing).
 
 ---
 

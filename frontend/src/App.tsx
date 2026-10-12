@@ -14,18 +14,28 @@ import {
   WifiOff,
   Zap,
 } from 'lucide-react';
-import type { HealthStatus, NetworkMeasurement } from './types';
+import type { HealthStatus, NetworkMeasurement, NetworkSession, CollectorStatus } from './types';
 import {
   fetchHealth,
   fetchLatestMeasurement,
   triggerLiveMeasurement,
   runSpeedTest,
   fetchMeasurementHistory,
+  fetchCollectorStatus,
+  startCollector,
+  stopCollector,
+  configureCollector,
+  fetchActiveSession,
+  startSession,
+  stopSession,
+  fetchSessions,
 } from './services/api';
 import { MetricCard } from './components/metrics/MetricCard';
 import { AppSidebar } from './components/layout/AppSidebar';
 import type { NavSection } from './components/layout/AppSidebar';
 import { ThroughputChart } from './components/charts/ThroughputChart';
+import { SessionTrackerCard } from './components/sessions/SessionTrackerCard';
+import { SessionHistoryTable } from './components/sessions/SessionHistoryTable';
 
 interface ToastState {
   id: number;
@@ -38,6 +48,9 @@ export function App() {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [latest, setLatest] = useState<NetworkMeasurement | null>(null);
   const [history, setHistory] = useState<NetworkMeasurement[]>([]);
+  const [collector, setCollector] = useState<CollectorStatus | null>(null);
+  const [activeSession, setActiveSession] = useState<NetworkSession | null>(null);
+  const [sessionList, setSessionList] = useState<NetworkSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [measuring, setMeasuring] = useState<boolean>(false);
   const [runningSpeedTest, setRunningSpeedTest] = useState<boolean>(false);
@@ -55,15 +68,21 @@ export function App() {
   const loadData = useCallback(async (isSilent: boolean = false) => {
     try {
       if (!isSilent) setLoading(true);
-      const [h, l, hist] = await Promise.all([
+      const [h, l, hist, col, actSess, sessList] = await Promise.all([
         fetchHealth().catch(() => null),
         fetchLatestMeasurement().catch(() => null),
         fetchMeasurementHistory(20).catch(() => ({ total_count: 0, limit: 20, offset: 0, measurements: [] })),
+        fetchCollectorStatus().catch(() => null),
+        fetchActiveSession().catch(() => null),
+        fetchSessions(10).catch(() => ({ total_count: 0, active_session: null, sessions: [] })),
       ]);
 
       setHealth(h);
       setLatest(l);
       setHistory(hist.measurements);
+      setCollector(col);
+      setActiveSession(actSess || sessList.active_session);
+      setSessionList(sessList.sessions);
       setLastRefreshed(new Date());
     } catch (err: any) {
       showToast(err?.message || 'Failed to update telemetry', 'error');
@@ -74,7 +93,7 @@ export function App() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(() => loadData(true), 12000);
+    const interval = setInterval(() => loadData(true), 10000);
     return () => clearInterval(interval);
   }, [loadData]);
 
@@ -112,6 +131,69 @@ export function App() {
       showToast(err?.message || 'Speed test failed', 'error');
     } finally {
       setRunningSpeedTest(false);
+    }
+  };
+
+  // Session tracking actions
+  const handleStartSession = async (notes?: string) => {
+    try {
+      const sess = await startSession(notes);
+      setActiveSession(sess);
+      await loadData(true);
+      showToast(`Started network session: ${sess.session_id}`, 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to start session', 'error');
+    }
+  };
+
+  const handleStopSession = async (sessionId?: string) => {
+    try {
+      const sess = await stopSession(sessionId);
+      setActiveSession(null);
+      await loadData(true);
+      showToast(
+        `Session ended: ${sess.total_bytes_combined_human || '0 B'} transferred in ${sess.duration_seconds}s (Avg Latency: ${sess.avg_latency_ms ?? '--'} ms)`,
+        'success'
+      );
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to stop session', 'error');
+    }
+  };
+
+  // Collector Daemon actions
+  const handleToggleCollector = async () => {
+    try {
+      if (collector?.is_running) {
+        const updated = await stopCollector();
+        setCollector(updated);
+        showToast('Background collector daemon paused', 'info');
+      } else {
+        const updated = await startCollector();
+        setCollector(updated);
+        showToast(`Background collector daemon started (polling every ${updated.interval_seconds}s)`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to toggle collector daemon', 'error');
+    }
+  };
+
+  const handleChangeCollectorInterval = async (seconds: number) => {
+    try {
+      const updated = await configureCollector(seconds);
+      setCollector(updated);
+      showToast(`Collector polling interval updated to ${seconds}s`, 'info');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update interval', 'error');
+    }
+  };
+
+  const handleTriggerSampleNow = async () => {
+    try {
+      await fetch('/api/v1/collector/collect-now', { method: 'POST' });
+      await loadData(true);
+      showToast('Instant background probe captured & persisted', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to trigger sample', 'error');
     }
   };
 
@@ -329,6 +411,18 @@ export function App() {
                 />
               </div>
 
+              {/* Phase 2: Session Network Tracker & Background Collector Daemon */}
+              <SessionTrackerCard
+                activeSession={activeSession}
+                collector={collector}
+                onStartSession={handleStartSession}
+                onStopSession={handleStopSession}
+                onToggleCollector={handleToggleCollector}
+                onChangeCollectorInterval={handleChangeCollectorInterval}
+                onTriggerSampleNow={handleTriggerSampleNow}
+                loading={loading}
+              />
+
               {/* Real-time Throughput Chart Card (Recharts) */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
@@ -388,7 +482,7 @@ export function App() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
                   <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100">
                     <p className="text-xs text-gray-400 font-medium">FastAPI Backend Status</p>
                     <p className="font-bold text-gray-900 mt-1 flex items-center space-x-1.5">
@@ -409,6 +503,21 @@ export function App() {
                   </div>
 
                   <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100">
+                    <p className="text-xs text-gray-400 font-medium">Collector Daemon</p>
+                    <p className="font-bold text-gray-900 mt-1 flex items-center space-x-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          collector?.is_running ? 'bg-emerald-500' : 'bg-gray-400'
+                        }`}
+                      />
+                      <span>
+                        {collector?.is_running ? `RUNNING (${collector.interval_seconds}s)` : 'PAUSED'}
+                      </span>
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{collector?.run_count ?? 0} cycles recorded</p>
+                  </div>
+
+                  <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100">
                     <p className="text-xs text-gray-400 font-medium">Active Wi-Fi Network</p>
                     <p className="font-bold text-gray-900 mt-1 truncate" title={latest?.wifi_ssid || 'Direct Interface'}>
                       {latest?.wifi_ssid ? `${latest.wifi_ssid} (${latest.wifi_signal_pct}%)` : latest?.interface_name || 'Wi-Fi'}
@@ -420,6 +529,7 @@ export function App() {
                     <p className="font-bold text-gray-900 mt-1">
                       {history.length} Measurements
                     </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{sessionList.length} Network Sessions</p>
                   </div>
                 </div>
               </div>
@@ -598,6 +708,123 @@ export function App() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Session-Level Consumption History */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-sm">Session-Level Data Tracking & History</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Discrete application and workflow sessions with accumulated usage and average latency
+                    </p>
+                  </div>
+                  <span className="text-xs bg-orange-50 text-orange-700 border border-orange-200 px-2.5 py-0.5 rounded-md font-semibold">
+                    {sessionList.length} Sessions Logged
+                  </span>
+                </div>
+                <div className="p-4">
+                  <SessionHistoryTable sessions={sessionList} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section: Test & Telemetry History */}
+          {currentSection === 'history' && (
+            <div className="space-y-6">
+              {/* Completed Sessions Table */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-sm">Completed Network Sessions</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Logged monitoring periods with duration, total bandwidth consumed, and latency benchmarks
+                    </p>
+                  </div>
+                  <span className="text-xs bg-orange-50 text-orange-700 border border-orange-200 px-2.5 py-0.5 rounded-md font-semibold">
+                    {sessionList.length} Sessions
+                  </span>
+                </div>
+                <div className="p-4">
+                  <SessionHistoryTable sessions={sessionList} />
+                </div>
+              </div>
+
+              {/* Persisted Measurements Table */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-sm">Persisted Device Measurements</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Verifiable device counter and probe records stored in database
+                    </p>
+                  </div>
+                  <span className="text-xs bg-orange-50 text-orange-700 border border-orange-200 px-2 py-0.5 rounded-md font-semibold">
+                    {history.length} records
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-gray-50 text-gray-500 font-semibold border-b border-gray-200">
+                      <tr>
+                        <th className="py-3 px-4">ID</th>
+                        <th className="py-3 px-4">Session ID</th>
+                        <th className="py-3 px-4">Timestamp</th>
+                        <th className="py-3 px-4">Interface</th>
+                        <th className="py-3 px-4">Throughput (Mbps)</th>
+                        <th className="py-3 px-4">Latency</th>
+                        <th className="py-3 px-4">Bytes Received</th>
+                        <th className="py-3 px-4">Bytes Sent</th>
+                        <th className="py-3 px-4">Method</th>
+                        <th className="py-3 px-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
+                      {history.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50/70 transition-colors">
+                          <td className="py-3 px-4 font-mono font-semibold text-gray-500">#{item.id}</td>
+                          <td className="py-3 px-4 font-mono text-gray-400 truncate max-w-[120px]">{item.notes?.includes('sess_') ? 'Linked' : '--'}</td>
+                          <td className="py-3 px-4 text-gray-600">
+                            {new Date(item.created_at).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            })}
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-gray-900">{item.interface_name}</td>
+                          <td className="py-3 px-4">
+                            {item.download_speed_mbps !== null ? (
+                              <span className="font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
+                                {item.download_speed_mbps} Mbps
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">--</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-mono font-medium">
+                            {item.latency_ms !== null ? `${item.latency_ms} ms` : 'N/A'}
+                          </td>
+                          <td className="py-3 px-4 font-medium text-gray-800">
+                            {item.bytes_recv_human || `${item.bytes_recv} B`}
+                          </td>
+                          <td className="py-3 px-4 text-gray-600">
+                            {item.bytes_sent_human || `${item.bytes_sent} B`}
+                          </td>
+                          <td className="py-3 px-4 text-gray-500 max-w-xs truncate" title={item.measurement_method}>
+                            {item.measurement_method}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              {item.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

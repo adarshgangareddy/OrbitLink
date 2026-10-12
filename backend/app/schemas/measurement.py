@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class MeasurementBase(BaseModel):
+    session_id: Optional[str] = None
     device_id: str
     interface_name: str
     bytes_sent: int = Field(ge=0)
