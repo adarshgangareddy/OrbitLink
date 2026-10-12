@@ -17,6 +17,8 @@ export function GroundedAssistantView({ onQuery, loading = false }: GroundedAssi
   const [asking, setAsking] = useState(false);
   const [conversation, setConversation] = useState<Array<{ q: string; a: AssistantQueryResponse }>>([]);
 
+  const isBusy = asking || loading;
+
   const promptChips = [
     'Why was my connection unstable yesterday?',
     'Could my household use a cheaper plan?',
@@ -26,7 +28,7 @@ export function GroundedAssistantView({ onQuery, loading = false }: GroundedAssi
   ];
 
   const handleSubmit = async (qText: string) => {
-    if (!qText.trim() || asking) return;
+    if (!qText.trim() || isBusy) return;
     setAsking(true);
     try {
       const res = await onQuery(qText.trim());

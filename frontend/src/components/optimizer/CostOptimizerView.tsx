@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import {
   DollarSign,
-  TrendingUp,
   AlertCircle,
-  CheckCircle2,
-  ShieldAlert,
-  Info,
   Sliders,
   Save,
   HelpCircle,
+  RefreshCw,
 } from 'lucide-react';
 import type { CostOptimizationAnalysis, PlanConfig } from '../../types';
 
@@ -76,6 +73,7 @@ export function CostOptimizerView({
               <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/80 border border-cyan-500/30 px-2 py-0.5 rounded-full font-mono">
                 DETERMINISTIC MATH
               </span>
+              {loading && <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />}
             </div>
             <p className="text-xs text-slate-400 mt-1">
               Verifiable financial modeling comparing your measured interface usage against verified market tiers.
@@ -193,6 +191,24 @@ export function CostOptimizerView({
                   type="number"
                   value={overageRate}
                   onChange={(e) => setOverageRate(Number(e.target.value))}
+                  className="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-slate-400">Equipment Rental Fee</label>
+                <input
+                  type="number"
+                  value={equipmentFee}
+                  onChange={(e) => setEquipmentFee(Number(e.target.value))}
+                  className="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-slate-400">Currency Symbol</label>
+                <input
+                  type="text"
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
                   className="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono"
                 />
               </div>
