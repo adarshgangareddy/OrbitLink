@@ -163,7 +163,7 @@ export interface BandwidthScheduleRecommendation {
   estimated_duration_minutes: number;
   safe_speed_mbps: number;
   safety_margin_pct: number;
-  reasoning: str;
+  reasoning: string;
   hourly_demand_profile: Array<{
     hour: number;
     label: string;

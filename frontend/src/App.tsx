@@ -17,7 +17,18 @@ import {
   WifiOff,
   Zap,
 } from 'lucide-react';
-import type { HealthStatus, NetworkMeasurement, NetworkSession, CollectorStatus } from './types';
+import type {
+  HealthStatus,
+  NetworkMeasurement,
+  NetworkSession,
+  CollectorStatus,
+  CostOptimizationAnalysis,
+  PlanConfig,
+  QualityDiagnosisItem,
+  BandwidthScheduleRecommendation,
+  EnvironmentalImpactReport,
+  MLForecastResponse,
+} from './types';
 import {
   fetchHealth,
   fetchLatestMeasurement,
@@ -31,6 +42,14 @@ import {
   startSession,
   stopSession,
   fetchSessions,
+  fetchCostAnalysis,
+  saveCurrentPlan,
+  fetchQualityDiagnoses,
+  verifyRemediationAction,
+  fetchBandwidthSchedule,
+  fetchEnvironmentalImpact,
+  queryAssistant,
+  fetchMLForecast,
 } from './services/api';
 import { MetricCard } from './components/metrics/MetricCard';
 import { AppSidebar } from './components/layout/AppSidebar';
@@ -41,6 +60,12 @@ import { StarlinkOutageTimeline } from './components/starlink/StarlinkOutageTime
 import { AdvancedTelemetryChart } from './components/charts/AdvancedTelemetryChart';
 import { SessionTrackerCard } from './components/sessions/SessionTrackerCard';
 import { SessionHistoryTable } from './components/sessions/SessionHistoryTable';
+import { CostOptimizerView } from './components/optimizer/CostOptimizerView';
+import { QualityDiagnosticsCard } from './components/diagnostics/QualityDiagnosticsCard';
+import { BandwidthSchedulerCard } from './components/efficiency/BandwidthSchedulerCard';
+import { EnvironmentalImpactCard } from './components/efficiency/EnvironmentalImpactCard';
+import { GroundedAssistantView } from './components/assistant/GroundedAssistantView';
+import { UsageForecastCard } from './components/forecasting/UsageForecastCard';
 
 interface ToastState {
   id: number;
@@ -59,6 +84,14 @@ export function App() {
   const [collector, setCollector] = useState<CollectorStatus | null>(null);
   const [activeSession, setActiveSession] = useState<NetworkSession | null>(null);
   const [sessionList, setSessionList] = useState<NetworkSession[]>([]);
+
+  // Optimization & Intelligence States
+  const [costAnalysis, setCostAnalysis] = useState<CostOptimizationAnalysis | null>(null);
+  const [diagnoses, setDiagnoses] = useState<QualityDiagnosisItem[]>([]);
+  const [schedule, setSchedule] = useState<BandwidthScheduleRecommendation | null>(null);
+  const [environmental, setEnvironmental] = useState<EnvironmentalImpactReport | null>(null);
+  const [forecast, setForecast] = useState<MLForecastResponse | null>(null);
+
   const [loading, setLoading] = useState<boolean>(true);
   const [measuring, setMeasuring] = useState<boolean>(false);
   const [timeRange, setTimeRange] = useState<string>('24h');
@@ -75,14 +108,20 @@ export function App() {
   const loadData = useCallback(async (isSilent: boolean = false) => {
     try {
       if (!isSilent) setLoading(true);
-      const [h, l, hist, col, actSess, sessList] = await Promise.all([
-        fetchHealth().catch(() => null),
-        fetchLatestMeasurement().catch(() => null),
-        fetchMeasurementHistory(30).catch(() => ({ total_count: 0, limit: 30, offset: 0, measurements: [] })),
-        fetchCollectorStatus().catch(() => null),
-        fetchActiveSession().catch(() => null),
-        fetchSessions(15).catch(() => ({ total_count: 0, active_session: null, sessions: [] })),
-      ]);
+      const [h, l, hist, col, actSess, sessList, costRes, diagRes, schedRes, envRes, fcRes] =
+        await Promise.all([
+          fetchHealth().catch(() => null),
+          fetchLatestMeasurement().catch(() => null),
+          fetchMeasurementHistory(30).catch(() => ({ total_count: 0, limit: 30, offset: 0, measurements: [] })),
+          fetchCollectorStatus().catch(() => null),
+          fetchActiveSession().catch(() => null),
+          fetchSessions(15).catch(() => ({ total_count: 0, active_session: null, sessions: [] })),
+          fetchCostAnalysis().catch(() => null),
+          fetchQualityDiagnoses().catch(() => []),
+          fetchBandwidthSchedule().catch(() => null),
+          fetchEnvironmentalImpact().catch(() => null),
+          fetchMLForecast().catch(() => null),
+        ]);
 
       setHealth(h);
       setLatest(l);
@@ -90,6 +129,11 @@ export function App() {
       setCollector(col);
       setActiveSession(actSess || sessList.active_session);
       setSessionList(sessList.sessions);
+      setCostAnalysis(costRes);
+      setDiagnoses(diagRes);
+      setSchedule(schedRes);
+      setEnvironmental(envRes);
+      setForecast(fcRes);
       setLastRefreshed(new Date());
     } catch (err: any) {
       showToast(err?.message || 'Failed to update telemetry', 'error');
@@ -100,7 +144,7 @@ export function App() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(() => loadData(true), 10000);
+    const interval = setInterval(() => loadData(true), 12000);
     return () => clearInterval(interval);
   }, [loadData]);
 
@@ -193,6 +237,55 @@ export function App() {
     );
   };
 
+  // Feature A Callbacks: Plan Configuration & Savings Recalculation
+  const handleSavePlan = async (plan: PlanConfig) => {
+    try {
+      await saveCurrentPlan(plan);
+      const updatedAnalysis = await fetchCostAnalysis();
+      setCostAnalysis(updatedAnalysis);
+      showToast(`Saved ISP plan: ${plan.plan_name}`, 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to save plan', 'error');
+    }
+  };
+
+  const handleRecalculateCost = async (customGb?: number) => {
+    try {
+      const updated = await fetchCostAnalysis(customGb);
+      setCostAnalysis(updated);
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to recalculate cost', 'error');
+    }
+  };
+
+  // Feature B Callbacks: Quality Diagnostics & Verification
+  const handleVerifyAction = async (action: string) => {
+    const res = await verifyRemediationAction(action);
+    showToast(`Verification outcome: ${res.outcome.toUpperCase()}`, res.outcome === 'improved' ? 'success' : 'info');
+    return res;
+  };
+
+  const handleRefreshDiagnoses = async () => {
+    const res = await fetchQualityDiagnoses();
+    setDiagnoses(res);
+    showToast('Quality diagnostics refreshed', 'info');
+  };
+
+  // Feature C Callback: Bandwidth Scheduler
+  const handleFileSizeChange = async (sizeGb: number) => {
+    try {
+      const res = await fetchBandwidthSchedule(sizeGb);
+      setSchedule(res);
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update schedule', 'error');
+    }
+  };
+
+  // Feature E Callback: Assistant Query
+  const handleAssistantQuery = async (q: string) => {
+    return await queryAssistant(q);
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#080C14] flex flex-row text-slate-100 antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
       {/* Toast Notification Box */}
@@ -254,12 +347,12 @@ export function App() {
               <div className="flex items-center space-x-2">
                 <h1 className="text-lg md:text-xl font-bold tracking-tight text-white capitalize font-sans">
                   {currentSection === 'overview' && 'Starlink Terminal Overview'}
-                  {currentSection === 'monitor' && 'Hardware & RF Monitor'}
-                  {currentSection === 'usage' && 'Data Usage & Cost Analytics'}
-                  {currentSection === 'performance' && 'Performance & Jitter Analysis'}
-                  {currentSection === 'recommendations' && 'AI Optimisation Recommendations'}
+                  {currentSection === 'monitor' && 'Hardware & RF Quality Monitor'}
+                  {currentSection === 'usage' && 'Internet Cost Optimizer & Usage'}
+                  {currentSection === 'performance' && 'Network Quality & Jitter Intelligence'}
+                  {currentSection === 'recommendations' && 'Bandwidth & Efficiency Intelligence'}
                   {currentSection === 'satellite' && 'Satellite Simulator & LEO Constellation'}
-                  {currentSection === 'assistant' && 'Diagnostic AI Assistant'}
+                  {currentSection === 'assistant' && 'Grounded AI Diagnostic Assistant'}
                   {currentSection === 'history' && 'Telemetry & Session History'}
                   {currentSection === 'settings' && 'Platform Settings & Environment'}
                 </h1>
@@ -269,15 +362,15 @@ export function App() {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">
-                {currentSection === 'overview' && 'Real-time Starlink terminal actuation, throughput telemetry, and continuous uptime monitoring.'}
-                {currentSection === 'monitor' && 'Physical network interface metrics, Wi-Fi RF details, and packet diagnostics.'}
-                {currentSection === 'usage' && 'Bandwidth consumption counters, custom ISP billing estimates, and streaming bitrate calculators.'}
-                {currentSection === 'performance' && 'SLA compliance, latency jitter distribution, and connection stability metrics.'}
-                {currentSection === 'recommendations' && 'Deterministic rules engine analyzing measured RF and latency indicators.'}
-                {currentSection === 'satellite' && 'Orbital mechanics, Doppler compensation, and Ku/Ka phased-array beam modeling.'}
-                {currentSection === 'assistant' && 'Interactive troubleshooting guide and diagnostic query assistant.'}
-                {currentSection === 'history' && 'Verifiable device measurement logs and monitored work sessions.'}
-                {currentSection === 'settings' && 'Database configuration, collector daemon parameters, and API credentials.'}
+                {currentSection === 'overview' && 'Real-time terminal telemetry, KPI benchmarks, and continuous link status.'}
+                {currentSection === 'monitor' && 'Evidence-based diagnoses, Wi-Fi RF attenuation, and remediation verification.'}
+                {currentSection === 'usage' && 'Deterministic plan comparison, overage safeguards, and carbon footprint estimation.'}
+                {currentSection === 'performance' && 'Bufferbloat identification, RFC 3393 jitter, and Starlink 25ms SLA compliance.'}
+                {currentSection === 'recommendations' && 'Smart off-peak download scheduler, 24h diurnal demand profiling, and resource efficiency.'}
+                {currentSection === 'satellite' && 'Orbital mechanics, Doppler compensation, and phased-array beam modeling.'}
+                {currentSection === 'assistant' && 'Grounded RAG assistant with verifiable technical citations and backend tools.'}
+                {currentSection === 'history' && 'Verifiable device measurement logs and recorded monitoring sessions.'}
+                {currentSection === 'settings' && 'Environment configuration, collector daemon parameters, and credentials.'}
               </p>
             </div>
           </div>
@@ -315,7 +408,7 @@ export function App() {
               <span className="hidden sm:inline">{measuring ? 'Sampling...' : 'Quick Probe'}</span>
             </button>
 
-            {/* Real Starlink 3-Stage Speed Test Button (Primary Vivid Orange) */}
+            {/* Real Starlink 3-Stage Speed Test Button */}
             <button
               onClick={() => setSpeedTestModalOpen(true)}
               className="inline-flex items-center space-x-2 px-3.5 md:px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 rounded-xl shadow-lg shadow-orange-950/40 border border-orange-400/30 transition-all active:scale-98"
@@ -406,7 +499,7 @@ export function App() {
                   isPlaceholder={latest?.latency_ms === null || latest?.latency_ms === undefined}
                 />
 
-                {/* 4. Data Received Today */}
+                {/* 4. Data Received */}
                 <MetricCard
                   icon={<Database className="w-5 h-5" />}
                   label="Data received"
@@ -420,7 +513,7 @@ export function App() {
                   isPlaceholder={!latest}
                 />
 
-                {/* 5. Data Sent Today */}
+                {/* 5. Data Sent */}
                 <MetricCard
                   icon={<Radio className="w-5 h-5" />}
                   label="Data sent"
@@ -434,7 +527,7 @@ export function App() {
                   isPlaceholder={!latest}
                 />
 
-                {/* 6. Starlink Link Quality */}
+                {/* 6. Link Quality */}
                 <MetricCard
                   icon={<Brain className="w-5 h-5" />}
                   label="Link Quality"
@@ -450,17 +543,17 @@ export function App() {
                 />
               </div>
 
-              {/* Advanced Multi-Metric Telemetry Chart (Replaces basic chart) */}
+              {/* Advanced Multi-Metric Telemetry Chart */}
               <AdvancedTelemetryChart
                 measurements={history}
                 timeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
               />
 
-              {/* Starlink Real-Time Outage & Continuity Timeline */}
+              {/* Starlink Real-Time Outage Timeline */}
               <StarlinkOutageTimeline measurements={history} />
 
-              {/* Phase 2: Session Network Tracker & Background Collector Daemon */}
+              {/* Phase 2: Session Tracker & Background Collector */}
               <SessionTrackerCard
                 activeSession={activeSession}
                 collector={collector}
@@ -471,114 +564,28 @@ export function App() {
                 onTriggerSampleNow={handleTriggerSampleNow}
                 loading={loading}
               />
-
-              {/* Optimisation Insights Banner */}
-              <div className="bg-[#0E1526]/80 border border-orange-500/30 rounded-2xl p-5 md:p-6 shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="flex items-start space-x-4 relative z-10">
-                  <div className="p-3 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30 shrink-0">
-                    <Lightbulb className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                      <h2 className="text-base font-bold text-white">Orbital Optimisation Intelligence</h2>
-                      <span className="text-[11px] font-semibold text-orange-300 bg-orange-500/20 border border-orange-500/30 px-2.5 py-0.5 rounded-md font-mono self-start sm:self-auto">
-                        Deterministic Rules Engine
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-                      {latest?.latency_ms && latest.latency_ms < 30
-                        ? `Exceptional roundtrip latency (${latest.latency_ms} ms). Your terminal is maintaining high elevation lock with Low Earth Orbit satellites with low buffer jitter.`
-                        : latest?.latency_ms && latest.latency_ms > 100
-                        ? `Elevated roundtrip latency observed (${latest.latency_ms} ms). Check your local Wi-Fi channel contention or terminal line-of-sight elevation.`
-                        : 'Calibrating baseline telemetry from continuous Starlink observation passes.'}
-                    </p>
-                    <div className="mt-3.5 flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-400">
-                      <span>• Interface: <strong className="text-slate-200">{latest?.interface_name || 'Wi-Fi'}</strong></span>
-                      <span>• Signal: <strong className="text-cyan-400">{latest?.wifi_signal_pct ? `${latest.wifi_signal_pct}%` : 'N/A'}</strong></span>
-                      <span>• Obstruction: <strong className="text-emerald-400">0.0% (Clear Sky Dome)</strong></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* System Diagnostics & Telemetry Pipeline Grid */}
-              <div className="bg-[#0E1526]/80 border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-xl">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/80">
-                  <div className="flex items-center space-x-2">
-                    <Server className="w-4 h-4 text-cyan-400" />
-                    <h3 className="font-bold text-white text-sm">System & Pipeline Diagnostics</h3>
-                  </div>
-                  <span className="text-xs text-slate-400 font-mono">
-                    Node: {latest?.device_id || 'ADARSH'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                  <div className="p-3.5 bg-slate-900/60 rounded-xl border border-slate-800">
-                    <p className="text-xs text-slate-400 font-medium">FastAPI Backend Status</p>
-                    <p className="font-bold text-white mt-1 flex items-center space-x-1.5">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          health?.status === 'healthy' ? 'bg-emerald-400' : 'bg-amber-400'
-                        }`}
-                      />
-                      <span>{health ? health.status.toUpperCase() : 'CHECKING...'}</span>
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-1">Uptime: 99.98%</p>
-                  </div>
-
-                  <div className="p-3.5 bg-slate-900/60 rounded-xl border border-slate-800">
-                    <p className="text-xs text-slate-400 font-medium">Database Engine</p>
-                    <p className="font-bold text-white mt-1 font-mono">
-                      {health?.database_engine ? `${health.database_engine.toUpperCase()}` : 'SQLITE'}
-                    </p>
-                    <p className="text-[10px] text-emerald-400 mt-1">Status: {health?.database_status || 'connected'}</p>
-                  </div>
-
-                  <div className="p-3.5 bg-slate-900/60 rounded-xl border border-slate-800">
-                    <p className="text-xs text-slate-400 font-medium">Collector Daemon</p>
-                    <p className="font-bold text-white mt-1 flex items-center space-x-1.5 font-mono">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          collector?.is_running ? 'bg-emerald-400' : 'bg-slate-500'
-                        }`}
-                      />
-                      <span>
-                        {collector?.is_running ? `RUNNING (${collector.interval_seconds}s)` : 'PAUSED'}
-                      </span>
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-1">{collector?.run_count ?? 0} cycles recorded</p>
-                  </div>
-
-                  <div className="p-3.5 bg-slate-900/60 rounded-xl border border-slate-800">
-                    <p className="text-xs text-slate-400 font-medium">Persisted Records</p>
-                    <p className="font-bold text-white mt-1 font-mono">
-                      {history.length} Measurements
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-1">{sessionList.length} Network Sessions</p>
-                  </div>
-                </div>
-              </div>
             </>
           )}
 
-          {/* ==================== 2. MONITOR SECTION ==================== */}
+          {/* ==================== 2. MONITOR SECTION (Feature B) ==================== */}
           {currentSection === 'monitor' && (
             <div className="space-y-6">
-              <div className="bg-[#0E1526]/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-                <h2 className="text-lg font-bold text-white mb-2">Live Interface Hardware Inspection</h2>
-                <p className="text-xs text-slate-400 mb-6">
-                  Deep inspection of local network interfaces, physical adapter hardware, and Wi-Fi RF telemetry.
-                </p>
+              <QualityDiagnosticsCard
+                diagnoses={diagnoses}
+                onVerifyAction={handleVerifyAction}
+                onRefreshDiagnoses={handleRefreshDiagnoses}
+                loading={loading}
+              />
 
+              {/* Physical Adapter Hardware Inspection */}
+              <div className="bg-[#0E1526]/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
+                <h2 className="text-lg font-bold text-white mb-2">Physical Interface Hardware Inspection</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div className="p-4 bg-slate-900/70 rounded-xl border border-slate-800">
                     <p className="text-xs font-semibold text-slate-400">Active Adapter</p>
                     <p className="text-lg font-bold text-white mt-1 font-mono">{latest?.interface_name || 'Wi-Fi'}</p>
                     <p className="text-xs text-slate-500 mt-1">Host Device: {latest?.device_id || 'ADARSH'}</p>
                   </div>
-
                   <div className="p-4 bg-slate-900/70 rounded-xl border border-slate-800">
                     <p className="text-xs font-semibold text-slate-400">Wi-Fi SSID & Signal</p>
                     <p className="text-lg font-bold text-cyan-400 mt-1 truncate">
@@ -588,96 +595,32 @@ export function App() {
                       Signal Strength: {latest?.wifi_signal_pct ? `${latest.wifi_signal_pct}%` : 'Optimal'}
                     </p>
                   </div>
-
                   <div className="p-4 bg-slate-900/70 rounded-xl border border-slate-800">
                     <p className="text-xs font-semibold text-slate-400">Last Latency Probe</p>
                     <p className="text-lg font-bold text-amber-400 mt-1 font-mono">{latest?.latency_ms ?? '--'} ms</p>
                     <p className="text-xs text-slate-500 mt-1">{latest?.measurement_method || 'ICMP / Socket Probe'}</p>
                   </div>
                 </div>
-
-                <div className="mt-6 pt-6 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                  <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-800/60">
-                    <span className="text-slate-400">Bytes Received:</span>
-                    <p className="font-bold text-white font-mono text-sm mt-0.5">{latest?.bytes_recv_human || '0 B'}</p>
-                  </div>
-                  <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-800/60">
-                    <span className="text-slate-400">Bytes Sent:</span>
-                    <p className="font-bold text-white font-mono text-sm mt-0.5">{latest?.bytes_sent_human || '0 B'}</p>
-                  </div>
-                  <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-800/60">
-                    <span className="text-slate-400">Delta Recv / Sent:</span>
-                    <p className="font-bold text-cyan-400 font-mono text-sm mt-0.5">
-                      {latest?.bytes_recv_delta ? `+${(latest.bytes_recv_delta / 1024).toFixed(1)} KB` : '--'} / {latest?.bytes_sent_delta ? `+${(latest.bytes_sent_delta / 1024).toFixed(1)} KB` : '--'}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-800/60">
-                    <span className="text-slate-400">Drop / Error Rate:</span>
-                    <p className="font-bold text-emerald-400 font-mono text-sm mt-0.5">0.00% (Lossless)</p>
-                  </div>
-                </div>
               </div>
             </div>
           )}
 
-          {/* ==================== 3. USAGE SECTION ==================== */}
+          {/* ==================== 3. USAGE SECTION (Features A, D, F) ==================== */}
           {currentSection === 'usage' && (
             <div className="space-y-6">
-              <div className="bg-[#0E1526]/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-                <h2 className="text-lg font-bold text-white mb-1">Data Usage & Internet Plan Analytics</h2>
-                <p className="text-xs text-slate-400 mb-6">
-                  Configure your internet plan quota to monitor consumption benchmarks and prevent overages.
-                </p>
+              {/* Feature A: Internet Cost Optimizer & Plan Analysis */}
+              <CostOptimizerView
+                analysis={costAnalysis}
+                onSavePlan={handleSavePlan}
+                onRecalculate={handleRecalculateCost}
+                loading={loading}
+              />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-5 border border-cyan-500/30 bg-cyan-950/20 rounded-xl space-y-4">
-                    <h3 className="font-bold text-sm text-white">Configured Plan Quota (Editable)</h3>
-                    <div className="space-y-3 text-xs">
-                      <div>
-                        <label className="text-slate-300 font-medium">Monthly Data Allowance (GB)</label>
-                        <input
-                          type="number"
-                          defaultValue={250}
-                          className="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 font-semibold text-white focus:outline-none focus:border-cyan-500 font-mono"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-slate-300 font-medium">Monthly Plan Cost (₹ / $)</label>
-                        <input
-                          type="number"
-                          defaultValue={999}
-                          className="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 font-semibold text-white focus:outline-none focus:border-cyan-500 font-mono"
-                        />
-                      </div>
-                    </div>
-                  </div>
+              {/* Feature F: Machine Learning Usage Forecasting */}
+              <UsageForecastCard forecast={forecast} loading={loading} />
 
-                  <div className="p-5 border border-slate-800 bg-slate-900/60 rounded-xl space-y-4">
-                    <h3 className="font-bold text-sm text-white">Streaming Video Estimation Calculator</h3>
-                    <p className="text-xs text-slate-400">
-                      Estimated data consumption based on standard video bitrate models:
-                    </p>
-                    <div className="space-y-2.5 text-xs">
-                      <div className="flex justify-between py-1 border-b border-slate-800">
-                        <span className="font-medium text-slate-300">480p (Standard Definition):</span>
-                        <span className="font-mono text-cyan-400 font-semibold">~0.7 GB / hour</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-800">
-                        <span className="font-medium text-slate-300">1080p (Full HD 60fps):</span>
-                        <span className="font-mono text-cyan-400 font-semibold">~2.5 GB / hour</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-800">
-                        <span className="font-medium text-slate-300">4K (Ultra HD HDR):</span>
-                        <span className="font-mono text-amber-400 font-semibold">~7.0 GB / hour</span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span className="font-medium text-slate-300">Cloud Gaming (1080p 60fps):</span>
-                        <span className="font-mono text-orange-400 font-semibold">~10-14 GB / hour</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Feature D: Environmental & Resource Transmission Efficiency */}
+              <EnvironmentalImpactCard report={environmental} loading={loading} />
 
               {/* Session-Level Consumption History */}
               <div className="bg-[#0E1526]/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
@@ -699,7 +642,7 @@ export function App() {
             </div>
           )}
 
-          {/* ==================== 4. PERFORMANCE SECTION ==================== */}
+          {/* ==================== 4. PERFORMANCE SECTION (Feature B) ==================== */}
           {currentSection === 'performance' && (
             <div className="space-y-6">
               <AdvancedTelemetryChart
@@ -707,60 +650,39 @@ export function App() {
                 timeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
               />
+              <QualityDiagnosticsCard
+                diagnoses={diagnoses}
+                onVerifyAction={handleVerifyAction}
+                onRefreshDiagnoses={handleRefreshDiagnoses}
+                loading={loading}
+              />
               <StarlinkOutageTimeline measurements={history} />
             </div>
           )}
 
-          {/* ==================== 5. RECOMMENDATIONS SECTION ==================== */}
+          {/* ==================== 5. RECOMMENDATIONS SECTION (Features C & D) ==================== */}
           {currentSection === 'recommendations' && (
             <div className="space-y-6">
-              <div className="bg-[#0E1526]/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="p-2.5 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Deterministic Network Rules & Recommendations</h2>
-                    <p className="text-xs text-slate-400">Verifiable optimizations derived from physical interface counters.</p>
-                  </div>
-                </div>
+              {/* Feature C: Smart Bandwidth Efficiency Scheduler */}
+              <BandwidthSchedulerCard
+                schedule={schedule}
+                onFileSizeChange={handleFileSizeChange}
+                loading={loading}
+              />
 
-                <div className="space-y-4">
-                  <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 flex items-start space-x-3.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 mt-2 shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-bold text-white">DNS Resolution & Roundtrip Latency</h4>
-                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                        Measured latency is currently {latest?.latency_ms ?? 24} ms. Using Anycast 1.1.1.1 / 8.8.8.8 keeps route propagation within single-digit hops.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 flex items-start space-x-3.5">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 mt-2 shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-bold text-white">Wi-Fi Channel Contention & Physical Siting</h4>
-                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                        Terminal signal is {latest?.wifi_signal_pct ? `${latest.wifi_signal_pct}%` : '95%'}. Operating on 5 GHz 80MHz channel band ensures maximum throughput without 2.4 GHz RF interference.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-slate-900/60 rounded-xl border border-slate-800 flex items-start space-x-3.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 mt-2 shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-bold text-white">Terminal Elevation & Obstruction Clearance</h4>
-                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                        Zero obstructions detected (0.0%). Ensure a 100° clear field of view from north-facing elevation to prevent beam dropouts during inter-satellite handover sweeps.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Feature D: Environmental Resource Efficiency */}
+              <EnvironmentalImpactCard report={environmental} loading={loading} />
             </div>
           )}
 
-          {/* ==================== 6. SATELLITE SECTION ==================== */}
+          {/* ==================== 6. ASSISTANT SECTION (Feature E) ==================== */}
+          {currentSection === 'assistant' && (
+            <div className="space-y-6">
+              <GroundedAssistantView onQuery={handleAssistantQuery} loading={loading} />
+            </div>
+          )}
+
+          {/* ==================== 7. SATELLITE SECTION ==================== */}
           {currentSection === 'satellite' && (
             <div className="space-y-6">
               <div className="bg-[#0E1526]/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
@@ -798,30 +720,6 @@ export function App() {
                   <p>
                     Starlink V2 satellites route packets directly across the orbital shell via 100 Gbps infrared laser crosslinks, bypassing terrestrial undersea fiber cables and reducing intercontinental latency below speed-of-light in glass.
                   </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ==================== 7. ASSISTANT SECTION ==================== */}
-          {currentSection === 'assistant' && (
-            <div className="space-y-6">
-              <div className="bg-[#0E1526]/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Brain className="w-6 h-6 text-cyan-400" />
-                  <h2 className="text-lg font-bold text-white">Diagnostic AI Assistant</h2>
-                </div>
-                <p className="text-xs text-slate-400 mb-6">
-                  Interactive assistant analyzing your live terminal telemetry and network interface counters.
-                </p>
-
-                <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300">
-                  <p className="font-semibold text-cyan-400 mb-2">Diagnostic Query Suggestions:</p>
-                  <ul className="space-y-2 list-disc list-inside">
-                    <li>"What is my current Wi-Fi packet error rate and signal level?"</li>
-                    <li>"How does my measured latency compare to Starlink 25ms SLA benchmarks?"</li>
-                    <li>"How much data did my active session transfer in the last 1 hour?"</li>
-                  </ul>
                 </div>
               </div>
             </div>
@@ -941,6 +839,11 @@ export function App() {
                   <p><span className="text-orange-400">ALLOW_SQLITE_FALLBACK</span>=True <span className="text-slate-500"># Zero-config automatic database fallback</span></p>
                   <p><span className="text-orange-400">DEFAULT_PING_TARGET</span>="1.1.1.1"</p>
                   <p><span className="text-cyan-400">STARLINK_TERMINAL_EMULATION</span>=True</p>
+                  <p><span className="text-emerald-400">AI_COST_OPTIMIZER_ENABLED</span>=True</p>
+                  <p><span className="text-emerald-400">QUALITY_INTELLIGENCE_ENABLED</span>=True</p>
+                  <p><span className="text-emerald-400">BANDWIDTH_SCHEDULER_ENABLED</span>=True</p>
+                  <p><span className="text-emerald-400">ENVIRONMENTAL_ESTIMATOR_ENABLED</span>=True</p>
+                  <p><span className="text-emerald-400">GROUNDED_AI_RAG_ENABLED</span>=True</p>
                 </div>
               </div>
             </div>
