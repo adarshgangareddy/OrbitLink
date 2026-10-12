@@ -107,8 +107,8 @@ export function StarlinkSpeedTestModal({
               <Gauge className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white tracking-tight">Starlink Multi-Tier Network Speed Test</h2>
-              <p className="text-[11px] text-slate-400">Device → Router → Satellite Transceiver → Global CDN</p>
+              <h2 className="text-sm font-bold text-white tracking-tight">3-Tier End-to-End Speed Test</h2>
+              <p className="text-[11px] text-slate-400">Device → Router → Gateway Uplink → Global CDN</p>
             </div>
           </div>
 
@@ -262,7 +262,7 @@ export function StarlinkSpeedTestModal({
               className="inline-flex items-center space-x-2 px-5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 rounded-xl shadow-lg transition-all active:scale-98 disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${testingStage !== 'idle' && testingStage !== 'completed' ? 'animate-spin' : ''}`} />
-              <span>{testingStage === 'completed' ? 'Test Again' : 'Run Starlink Speed Test'}</span>
+              <span>{testingStage === 'completed' ? 'Test Again' : 'Run Multi-Tier Speed Test'}</span>
             </button>
           </div>
         </div>

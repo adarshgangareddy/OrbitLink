@@ -343,7 +343,7 @@ export function App() {
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-lg md:text-xl font-bold tracking-tight text-white capitalize font-sans">
-                  {currentSection === 'overview' && 'Starlink Terminal Overview'}
+                  {currentSection === 'overview' && 'Network Gateway Overview'}
                   {currentSection === 'monitor' && 'Hardware & RF Quality Monitor'}
                   {currentSection === 'usage' && 'Internet Cost Optimizer & Usage'}
                   {currentSection === 'performance' && 'Network Quality & Jitter Intelligence'}
@@ -359,12 +359,12 @@ export function App() {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">
-                {currentSection === 'overview' && 'Real-time terminal telemetry, KPI benchmarks, and continuous link status.'}
+                {currentSection === 'overview' && 'Real-time gateway telemetry, KPI benchmarks, and continuous link status.'}
                 {currentSection === 'monitor' && 'Evidence-based diagnoses, Wi-Fi RF attenuation, and remediation verification.'}
                 {currentSection === 'usage' && 'Deterministic plan comparison, overage safeguards, and carbon footprint estimation.'}
-                {currentSection === 'performance' && 'Bufferbloat identification, RFC 3393 jitter, and Starlink 25ms SLA compliance.'}
+                {currentSection === 'performance' && 'Bufferbloat identification, RFC 3393 jitter, and 25ms low-latency SLA benchmark.'}
                 {currentSection === 'recommendations' && 'Smart off-peak download scheduler, 24h diurnal demand profiling, and resource efficiency.'}
-                {currentSection === 'satellite' && 'Orbital mechanics, Doppler compensation, and phased-array beam modeling.'}
+                {currentSection === 'satellite' && 'Propagation delay, Doppler compensation, and orbital link modeling.'}
                 {currentSection === 'assistant' && 'Grounded RAG assistant with verifiable technical citations and backend tools.'}
                 {currentSection === 'history' && 'Verifiable device measurement logs and recorded monitoring sessions.'}
                 {currentSection === 'settings' && 'Environment configuration, collector daemon parameters, and credentials.'}
@@ -472,7 +472,7 @@ export function App() {
                   unit="Mbps"
                   subtitle={
                     latest?.upload_speed_mbps
-                      ? 'Starlink uplink payload'
+                      ? 'Upstream throughput payload'
                       : 'Awaiting test'
                   }
                   isPlaceholder={!latest?.upload_speed_mbps}
@@ -685,13 +685,13 @@ export function App() {
               <div className="bg-[#0E1526]/80 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center space-x-2.5 mb-2">
                   <Satellite className="w-5 h-5 text-cyan-400" />
-                  <h2 className="text-lg font-bold text-white">Starlink Constellation Link Mechanics</h2>
+                  <h2 className="text-lg font-bold text-white">Low Earth Orbit (LEO) Constellation Mechanics</h2>
                   <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/80 border border-cyan-500/30 px-2 py-0.5 rounded font-mono">
-                    LEO SHELL 1
+                    ORBITAL SHELL
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 mb-6">
-                  Orbital dynamics, phased array electronically steered beam tracking, and laser inter-satellite links.
+                  Orbital dynamics, electronically steered beam tracking, and optical inter-satellite links.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-sm">
@@ -713,9 +713,9 @@ export function App() {
                 </div>
 
                 <div className="mt-6 p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-xs text-slate-300 space-y-2">
-                  <h4 className="font-bold text-white text-sm">Space Lasers (Optical Inter-Satellite Links - OISLs)</h4>
+                  <h4 className="font-bold text-white text-sm">Optical Inter-Satellite Links (OISLs)</h4>
                   <p>
-                    Starlink V2 satellites route packets directly across the orbital shell via 100 Gbps infrared laser crosslinks, bypassing terrestrial undersea fiber cables and reducing intercontinental latency below speed-of-light in glass.
+                    LEO satellites route packets directly across the orbital shell via high-speed optical laser crosslinks, bypassing terrestrial undersea fiber congestion and minimizing intercontinental latency.
                   </p>
                 </div>
               </div>
@@ -835,7 +835,7 @@ export function App() {
                   <p><span className="text-orange-400">DATABASE_URL</span>="postgresql+psycopg://orbitlink_user:orbitlink_pass@localhost:5432/orbitlink"</p>
                   <p><span className="text-orange-400">ALLOW_SQLITE_FALLBACK</span>=True <span className="text-slate-500"># Zero-config automatic database fallback</span></p>
                   <p><span className="text-orange-400">DEFAULT_PING_TARGET</span>="1.1.1.1"</p>
-                  <p><span className="text-cyan-400">STARLINK_TERMINAL_EMULATION</span>=True</p>
+                  <p><span className="text-cyan-400">HARDWARE_TRANSCEIVER_EMULATION</span>=True</p>
                   <p><span className="text-emerald-400">AI_COST_OPTIMIZER_ENABLED</span>=True</p>
                   <p><span className="text-emerald-400">QUALITY_INTELLIGENCE_ENABLED</span>=True</p>
                   <p><span className="text-emerald-400">BANDWIDTH_SCHEDULER_ENABLED</span>=True</p>

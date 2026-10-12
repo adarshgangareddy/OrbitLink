@@ -191,7 +191,7 @@ export function AdvancedTelemetryChart({
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1E293B" />
                 <XAxis dataKey="shortTime" tick={{ fontSize: 11, fill: '#64748B' }} tickLine={false} axisLine={{ stroke: '#1E293B' }} />
                 <YAxis tick={{ fontSize: 11, fill: '#64748B' }} tickLine={false} axisLine={false} unit=" ms" />
-                <ReferenceLine y={25} stroke="#10B981" strokeDasharray="4 4" label={{ value: 'Starlink Target (25ms)', fill: '#10B981', fontSize: 10, position: 'top' }} />
+                <ReferenceLine y={25} stroke="#10B981" strokeDasharray="4 4" label={{ value: 'SLA Benchmark (25ms)', fill: '#10B981', fontSize: 10, position: 'top' }} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#0F172A',
